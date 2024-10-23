@@ -8,12 +8,27 @@ const TodoApp = () => {
   useEffect(() => {
     const storedTodos = localStorage.getItem("todos");
     if (storedTodos) {
-      setTodos(JSON.parse(storedTodos));
+      try {
+        const parsedTodos = JSON.parse(storedTodos);
+        if (Array.isArray(parsedTodos)) {
+          setTodos(parsedTodos);
+        } else {
+          console.error("Todos stored in localStorage is not an array.");
+        }
+      } catch (error) {
+        console.error("Error parsing todos from localStorage:", error);
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
+    if (todos.length > 0) {
+      try {
+        localStorage.setItem("todos", JSON.stringify(todos));
+      } catch (error) {
+        console.error("Error saving todos to localStorage:", error);
+      }
+    }
   }, [todos]);
 
   const handleInputChange = (event) => {
@@ -58,7 +73,7 @@ const TodoApp = () => {
     setTodos(
       todos.map((todo) => ({
         ...todo,
-        completed: !allCompleted
+        completed: !allCompleted,
       }))
     );
   };
@@ -113,9 +128,7 @@ const TodoApp = () => {
                 <span
                   className="flex-grow-1"
                   style={{
-                    textDecoration: todo.completed
-                      ? "line-through"
-                      : "none",
+                    textDecoration: todo.completed ? "line-through" : "none",
                   }}
                 >
                   {todo.text}
@@ -124,7 +137,7 @@ const TodoApp = () => {
                   className="btn btn-link text-danger"
                   onClick={() => deleteTodo(todo.id)}
                 >
-                  <i className="fa fa-remove"/>
+                  <i className="fa fa-remove" />
                 </button>
               </li>
             ))}
@@ -148,9 +161,7 @@ const TodoApp = () => {
                 <button
                   type="button"
                   className={`btn ${
-                    filter === "active"
-                      ? "btn-primary"
-                      : "btn-outline-secondary"
+                    filter === "active" ? "btn-primary" : "btn-outline-secondary"
                   }`}
                   onClick={() => setFilter("active")}
                 >
