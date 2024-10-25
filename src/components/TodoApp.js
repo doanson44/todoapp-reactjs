@@ -1,93 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useCallback } from "react";
+import { useTodoStore } from "../helpers/store";
 
 const TodoApp = () => {
-  const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState("");
-  const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    const storedTodos = localStorage.getItem("todos");
-    if (storedTodos) {
-      try {
-        const parsedTodos = JSON.parse(storedTodos);
-        if (Array.isArray(parsedTodos)) {
-          setTodos(parsedTodos);
-        } else {
-          console.error("Todos stored in localStorage is not an array.");
-        }
-      } catch (error) {
-        console.error("Error parsing todos from localStorage:", error);
-      }
-    }
+  const todos = useTodoStore((state) => state.todos);
+  const filter = useTodoStore((state) => state.filter);
+  const addTodo = useTodoStore((state) => state.addTodo);
+  const toggleTodo = useTodoStore((state) => state.toggleTodo);
+  const deleteTodo = useTodoStore((state) => state.deleteTodo);
+  const toggleAllTodos = useTodoStore((state) => state.toggleAllTodos);
+  const clearCompleted = useTodoStore((state) => state.clearCompleted);
+  const setFilter = useTodoStore((state) => state.setFilter);
+
+  const handleInputChange = useCallback((event) => {
+    setNewTodo(event.target.value);
   }, []);
 
-  useEffect(() => {
-    if (todos.length > 0) {
-      try {
-        localStorage.setItem("todos", JSON.stringify(todos));
-      } catch (error) {
-        console.error("Error saving todos to localStorage:", error);
-      }
-    }
-  }, [todos]);
-
-  const handleInputChange = (event) => {
-    setNewTodo(event.target.value);
-  };
-
-  const addTodo = () => {
+  const handleAddTodo = useCallback(() => {
     if (newTodo.trim() !== "") {
-      setTodos([
-        ...todos,
-        { id: Date.now(), text: newTodo, completed: false },
-      ]);
+      addTodo(newTodo);
       setNewTodo("");
     }
-  };
+  }, [newTodo, addTodo]);
 
-  const toggleTodo = (id) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
-  };
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Enter") {
+        handleAddTodo();
+      }
+    },
+    [handleAddTodo]
+  );
 
-  const handleKeyDown = (event) => {
-    if (event.key === "Enter") {
-      addTodo();
-    }
-  };
-
-  const clearCompleted = () => {
-    setTodos(todos.filter((todo) => !todo.completed));
-  };
-
-  const deleteTodo = (id) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-  };
-
-  const toggleAllTodos = () => {
-    const allCompleted = todos.every((todo) => todo.completed);
-
-    setTodos(
-      todos.map((todo) => ({
-        ...todo,
-        completed: !allCompleted,
-      }))
-    );
-  };
-
-  const filteredTodos = todos.filter((todo) => {
-    switch (filter) {
-      case "active":
-        return !todo.completed;
-      case "completed":
-        return todo.completed;
-      default:
-        return true;
-    }
-  });
+  const filteredTodos = useMemo(() => {
+    return todos.filter((todo) => {
+      switch (filter) {
+        case "active":
+          return !todo.completed;
+        case "completed":
+          return todo.completed;
+        default:
+          return true;
+      }
+    });
+  }, [todos, filter]);
 
   return (
     <div className="container mt-5">
@@ -106,7 +63,7 @@ const TodoApp = () => {
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
             />
-            <button className="btn btn-primary" onClick={addTodo}>
+            <button className="btn btn-primary" onClick={handleAddTodo}>
               <i className="fa-solid fa-plus"></i>
             </button>
           </div>
